@@ -19,7 +19,6 @@ from yaml import Loader, Dumper
 HOMEWORK_ID_REQUEST     = 'GET_HOMEWORK_ID'
 UPDATE_METADATA_REQUEST = 'UPDATE_METADATA'
 UPDATE_TESTS_REQUEST    = 'UPDATE_TESTS'
-GRADES_REQUEST          = 'ALL_STUDENTS_GRADES'
 
 def is_function(val):
     return inspect.isfunction(val)
@@ -42,8 +41,6 @@ class PennGraderBackend:
 
             self.config_api_url = config['config_api_url']
             self.config_api_key = config['config_api_key']
-            self.grades_api_url = config['grades_api_url']
-            self.grades_api_key = config['grades_api_key']
 
             self.secret_key      = config['secret_id']
 
@@ -82,39 +79,6 @@ class PennGraderBackend:
             })
         }
         print(self._send_request(request, self.config_api_url, self.config_api_key))
-    
-    def get_question_grades(self, question_list):
-        '''
-        Return student scores on questions that are within question_list
-        '''
-        grades_df, deadline = self.get_raw_grades(with_deadline = True)
-        if grades_df is not None:
-            
-            if grades_df.shape[0] == 0:
-                return "There have been no submissions."
-            
-            # Extract student ID from [student_submission_id]
-            grades_df['student_id'] = grades_df['student_submission_id'].apply(lambda x: str(x).split('_')[0])
-            grades_df['question_id'] = grades_df['student_submission_id'].apply(lambda x: x[len(str(x).split('_')[0])+1:])
-
-            # Convert to correct types
-            grades_df['timestamp'] = pd.to_datetime(grades_df['timestamp'])
-            grades_df['student_score'] = grades_df['student_score'].astype(int)
-            grades_df['max_score'] = grades_df['max_score'].astype(int)
-
-            grades_df = grades_df[grades_df['student_id'] != 99999999]
-
-            ## Legitimate PennIDs are 8 characters
-            grades_df = grades_df[grades_df['student_id'].apply(lambda x: len(str(x))) == 8]
-
-            ## Filter by whether the question ID is in our list
-            grades_df = grades_df[grades_df['question_id'].apply(lambda x: x in question_list)]
-            scores_df = grades_df.groupby('student_id').sum().reset_index()#[['student_id','student_score','max_score']]
-
-            #return grades_df#[['student_id','question_id','student_score']]
-            return scores_df
-    
-
     
     def _get_homework_id(self):
         request = { 
