@@ -1,2 +1,2 @@
-__version__ = "0.5.2"
+__version__ = "0.5.4"
 __author__ = 'Leonardo Murri and Zachary G. Ives'
